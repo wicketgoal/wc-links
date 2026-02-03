@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Universal Player</title>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.0"></script>
+
+<style>
+    html, body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+    }
+
+    #videoPlayer, #iframeViewer {
+        width: 100%;
+        height: 100%;
+        display: none;
+        border: none;
+        background: #000;
+    }
+
+    /* Loader Spinner */
+    #loader {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 6px solid rgba(255,255,255,0.2);
+        border-top: 6px solid #fff;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        animation: spin 0.9s linear infinite;
+        z-index: 20;
+    }
+
+    @keyframes spin {
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* Watermark */
+    #overlay-text {
+        position: absolute;
+        bottom: 5%;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 18px;
+        z-index: 15;
+        pointer-events: none;
+    }
+</style>
+</head>
+<body>
+
+<div id="loader"></div>
+
+<video id="videoPlayer" controls autoplay playsinline></video>
+
+<!-- IMPORTANT: no sandbox (same as old working code) -->
+<iframe id="iframeViewer"></iframe>
+
+<div id="overlay-text"></div>
+
+<script>
+    const streams = {
+        "willow": "https://crichd.workspace-sultanarabi161.workers.dev/live/willowusa.m3u8",
+        "willow2": "https://hls.theblacks.site/hls/727d6f11-198b-44ef-83c4-29f9a8456e30/index.m3u8",
+        "willow3": "https://crichd.xfireflix.workers.dev/player?id=willowusa",
+        "asport": "https://n.shopnojaal.top/ayna/play.php?id=eacf6c3f-0773-4bc3-a03a-cfee09f10348",
+        "india": "https://embedsports.me/cricket-world-cup/afghanistan-vs-scotland-stream-1",
+        "nep": "https://cricketstan.github.io/Willow-Sports/",
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id") || "1";
+    const url = streams[id] || streams["1"];
+
+    const video = document.getElementById("videoPlayer");
+    const iframe = document.getElementById("iframeViewer");
+    const loader = document.getElementById("loader");
+
+    function hideLoader() {
+        loader.style.display = "none";
+    }
+
+    // ----- DETECT TYPE -----
+    const isHLS = url.endsWith(".m3u8") || url.includes("playlist.m3u8");
+    const videoExt = ["mp4", "webm", "ogg", "mov", "mkv"];
+    const isVideo = videoExt.some(ext => url.toLowerCase().includes("." + ext));
+
+    if (isHLS) {
+        // ----- HLS VIDEO -----
+        video.style.display = "block";
+
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                video.play();
+                hideLoader();
+            });
+            hls.on(Hls.Events.ERROR, () => hideLoader());
+        } else {
+            // Safari fallback
+            video.src = url;
+            video.addEventListener("loadedmetadata", () => {
+                video.play();
+                hideLoader();
+            });
+        }
+
+    } else if (isVideo) {
+        // ----- NORMAL VIDEO FILE -----
+        video.style.display = "block";
+        video.src = url;
+
+        video.addEventListener("loadeddata", hideLoader);
+
+    } else {
+        // ----- IFRAME (ALL OTHER LINKS) -----
+        iframe.style.display = "block";
+        iframe.src = url;
+
+        // Hide loader when iframe finishes loading
+        iframe.onload = () => {
+            hideLoader();
+        };
+    }
+</script>
+
+</body>
+</html>
